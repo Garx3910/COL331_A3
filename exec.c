@@ -6,6 +6,8 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
+#include "date.h"
+#include "rand.h"
 
 int
 exec(char *path, char **argv)
@@ -18,9 +20,28 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
-
+  //struct vma prog_vma, stack_vma, heap_vma, shadow_vma;	
+  //int prog_aslr, stack_aslr, heap_aslr, r; 	
   begin_op();
-
+  // Get aslr_flag
+  int aslr_flag= 0;
+  char c='0';
+  if ((ip = namei("aslr_flag")) == 0) {
+    cprintf("unable to open aslr_flag file, default to no aslr\n");
+    aslr_flag=0;
+  } else {
+    ilock(ip);
+    if (readi(ip, &c, 0, sizeof(char)) != sizeof(char)) {
+      cprintf("unable to read aslr_flag file, default to no aslr\n");
+      aslr_flag=0;
+    } else {
+      aslr_flag = (c == '1')? 1 : 0;
+      curproc->aslr_enabled=aslr_flag;
+    }
+    iunlockput(ip);
+  }
+  //if (DEBUG_MSG)
+  cprintf("aslr_flag = %d\n", aslr_flag);
   if((ip = namei(path)) == 0){
     end_op();
     cprintf("exec: fail\n");
@@ -63,11 +84,15 @@ exec(char *path, char **argv)
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
   sz = PGROUNDUP(sz);
+  
   if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
     goto bad;
   clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
   sp = sz;
-
+  //cprintf("ffffffffffffffff\n");
+  
+  //cprintf("ffffffffffffffff\n");
+  
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
@@ -99,6 +124,7 @@ exec(char *path, char **argv)
   curproc->sz = sz;
   curproc->tf->eip = elf.entry;  // main
   curproc->tf->esp = sp;
+  
   switchuvm(curproc);
   freevm(oldpgdir);
   return 0;

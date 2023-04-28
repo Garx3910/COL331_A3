@@ -27,6 +27,7 @@ OBJS = \
 	uart.o\
 	vectors.o\
 	vm.o\
+	rand.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -183,8 +184,8 @@ UPROGS=\
 	_zombie\
 	_buffer_overflow\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README payload $(UPROGS)
+fs.img: mkfs README aslr_flag $(UPROGS)
+	./mkfs fs.img README aslr_flag payload $(UPROGS)
 
 -include *.d
 
@@ -197,7 +198,7 @@ clean:
 
 # make a printout
 FILES = $(shell grep -v '^\#' runoff.list)
-PRINT = runoff.list runoff.spec README payload toc.hdr toc.ftr $(FILES)
+PRINT = runoff.list runoff.spec README aslr_flag payload toc.hdr toc.ftr $(FILES)
 
 xv6.pdf: $(PRINT)
 	./runoff
@@ -252,7 +253,7 @@ EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c buffer_overflow.c\
 	printf.c umalloc.c\
-	README payload  dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
+	README aslr_flag payload  dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 
 dist:
